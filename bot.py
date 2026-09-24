@@ -9,15 +9,21 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+import google.generativeai as genai
 
-# Xavfsizlik uchun Token va Admin ID Render Environment Variables'dan o'qiladi
+# Xavfsizlik uchun Token, Admin ID va Gemini API Key Render Environment Variables'dan o'qiladi
 TOKEN = os.getenv("TOKEN")
 ADMIN_ID_STR = os.getenv("ADMIN_ID")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 ADMIN_ID = int(ADMIN_ID_STR) if ADMIN_ID_STR else None
 
-if not TOKEN or not ADMIN_ID:
-    logging.error("XATOLIK: TOKEN yoki ADMIN_ID topilmadi! Render Environment Variables'ni tekshiring.")
+if not TOKEN or not ADMIN_ID or not GEMINI_API_KEY:
+    logging.error("XATOLIK: TOKEN, ADMIN_ID yoki GEMINI_API_KEY topilmadi! Render Environment Variables'ni tekshiring.")
     sys.exit(1)
+
+# Gemini AI sozlamalari
+genai.configure(api_key=GEMINI_API_KEY)
+ai_model = genai.GenerativeModel("gemini-1.5-flash")
 
 def init_db():
     try:
@@ -106,9 +112,10 @@ def get_forecasti(f_type: str):
 
 init_db()
 
+# Menyu: Kunlik prognoz va AI tahlil tugmalari
 asosiy_menyu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="📅 Kunlik prognoz"), KeyboardButton(text="📅 Haftalik prognoz")]
+        [KeyboardButton(text="📅 Kunlik prognoz"), KeyboardButton(text="🤖 AI Tahlil")]
     ],
     resize_keyboard=True
 )
@@ -148,7 +155,6 @@ async def create_poll(message: Message):
         await message.answer("Sizda bu buyruq uchun huquq yo'q!")
         return
 
-    # Format: /poll Savol? | Variant 1 | Variant 2
     text = message.text.replace("/poll", "").strip()
     if not text or "|" not in text:
         await message.answer(
@@ -177,7 +183,7 @@ async def create_poll(message: Message):
                 chat_id=uid,
                 question=question,
                 options=options,
-                is_anonymous=True  # Telegram shaxsiy chatlari uchun True bo'lishi shart
+                is_anonymous=True
             )
             success += 1
             await asyncio.sleep(0.05)
@@ -228,19 +234,30 @@ async def kundalik_baholashni_ornatish(message: Message):
     save_forecast("kundalik", matn)
     await message.answer("✅ Kunlik prognoz bazaga saqlandi va foydalanuvchilarga ochildi!")
 
-@dp.message(Command('haftalik_toplam'))
-async def haftalik_prognozni_belgilash(message: Message):
+# 4. AI orqali avtomatik tahlil yaratish va saqlash (/ai_ornatish)
+@dp.message(Command('ai_ornatish'))
+async def ai_tahlil_yaratish(message: Message):
     if message.from_user.id != ADMIN_ID:
         await message.answer("Sizda bu buyruq uchun huquq yo'q!")
         return
 
-    matn = message.text.replace("/haftalik_toplam", "").strip()
-    if not matn:
-        await message.answer("Iltimos, haftalik prognoz matnini ham yozing!")
-        return
+    prompt = message.text.replace("/ai_ornatish", "").strip()
+    if not prompt:
+        prompt = "Futbol bo'yicha bugungi eng asosiy o'yinlar uchun professional tahlil va prognoz tuzib ber, koeffitsiyentlari bilan o'zbek tilida yoz."
 
-    save_forecast("haftalik", matn)
-    await message.answer("✅ Haftalik prognoz bazaga saqlandi!")
+    waiting_msg = await message.answer("🤖 Sun'iy intellekt tahlil tayyorlamoqda, biroz kuting...")
+
+    try:
+        # Gemini orqali tahlil generatsiya qilish
+        response = ai_model.generate_content(prompt)
+        ai_text = response.text
+
+        # Bazaga saqlash
+        save_forecast("ai_tahlil", ai_text)
+        
+        await waiting_msg.edit_text("✅ AI tahlil muvaffaqiyatli yaratildi va bazaga saqlandi! Foydalanuvchilar '🤖 AI Tahlil' tugmasi orqali o'qishlari mumkin.")
+    except Exception as e:
+        await waiting_msg.edit_text(f"❌ AI tahlilni yaratishda xatolik yuz berdi: {e}")
 
 @dp.message()
 async def matn_ishlovchisi(message: Message) -> None:
@@ -252,12 +269,12 @@ async def matn_ishlovchisi(message: Message) -> None:
             else:
                 await message.answer(f"📊 **Bugungi kunlik prognoz:**\n\n{kundalik_matn}")
 
-        elif message.text == "📅 Haftalik prognoz":
-            haftalik_matn = get_forecasti("haftalik")
-            if haftalik_matn is None:
-                await message.answer("⏳ Haftalik o'yinlar hali tahlil qilinmoqda, birozdan so'ng.")
+        elif message.text == "🤖 AI Tahlil":
+            ai_matn = get_forecasti("ai_tahlil")
+            if ai_matn is None:
+                await message.answer("⏳ Hozircha AI tahlil tayyorlanmagan, birozdan so'ng urinib ko'ring.")
             else:
-                await message.answer(f"📊 **Haftalik prognoz:**\n\n{haftalik_matn}")
+                await message.answer(f"🤖 **Sun'iy intellekt tahlili:**\n\n{ai_matn}")
         else:
             await message.answer("Iltimos, pastdagi tugmalardan foydalaning.")
     except Exception as e:
@@ -278,7 +295,7 @@ async def web_app():
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    print("Bot yangi funksiyalar bilan xavfsiz rejimda ishga tushdi...")
+    print("Bot AI tahlil funksiyasi bilan ishga tushdi...")
     await asyncio.gather(web_app(), dp.start_polling(bot))
 
 if __name__ == "__main__":
