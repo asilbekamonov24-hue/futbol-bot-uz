@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, PollAnswer
+from aiogram.types import Message
 
 # Xavfsizlik uchun Token va Admin ID Render Environment Variables'dan o'qiladi
 TOKEN = os.getenv("TOKEN")
@@ -141,19 +141,19 @@ async def bot_statistikasi(message: Message):
     total = get_total_users()
     await message.answer(f"📊 **Bot statistikasi:**\n\nJami foydalanuvchilar soni: <b>{total}</b> ta")
 
-# 2. Ovoz berish yaratish (/poll) - Admin buyrug'i
+# 2. Barcha foydalanuvchilarga Ovoz berish tarqatish (/poll)
 @dp.message(Command('poll'))
 async def create_poll(message: Message):
     if message.from_user.id != ADMIN_ID:
         await message.answer("Sizda bu buyruq uchun huquq yo'q!")
         return
 
-    # Masalan: /poll Real Madrid - Barcelona|Real yutadi|Barcelona yutadi|Durang
+    # Format: /poll Savol? | Variant 1 | Variant 2
     text = message.text.replace("/poll", "").strip()
     if not text or "|" not in text:
         await message.answer(
             "Iltimos, to'g'ri formatda yozing:\n"
-            "<code>/poll Savol matni?|Variant 1|Variant 2|Variant 3</code>"
+            "<code>/poll Savol matni? | Variant 1 | Variant 2</code>"
         )
         return
 
@@ -165,15 +165,26 @@ async def create_poll(message: Message):
         await message.answer("Kamida 2 ta variant bo'lishi kerak!")
         return
 
-    try:
-        await message.bot.send_poll(
-            chat_id=message.chat.id,
-            question=question,
-            options=options,
-            is_anonymous=False
-        )
-    except Exception as e:
-        await message.answer(f"Ovoz berishni ochishda xatolik: {e}")
+    users = get_all_users()
+    success = 0
+    failed = 0
+
+    await message.answer(f"⏳ Ovoz berish {len(users)} ta foydalanuvchiga tarqatilmoqda...")
+
+    for uid in users:
+        try:
+            await message.bot.send_poll(
+                chat_id=uid,
+                question=question,
+                options=options,
+                is_anonymous=False
+            )
+            success += 1
+            await asyncio.sleep(0.05)
+        except Exception:
+            failed += 1
+
+    await message.answer(f"✅ Ovoz berish tarqatildi!\n\n• Muvaffaqiyatli: {success}\n• Xatolik (bloklaganlar): {failed}")
 
 # 3. Barchaga xabar yuborish (Broadcast)
 @dp.message(Command('broadcast'))
@@ -197,7 +208,7 @@ async def broadcast_message(message: Message):
         try:
             await message.bot.send_message(chat_id=uid, text=f"📢 <b>E'lon:</b>\n\n{text}")
             success += 1
-            await asyncio.sleep(0.05) # Telegram limitiga tushmaslik uchun kichik tanaffus
+            await asyncio.sleep(0.05)
         except Exception:
             failed += 1
 
