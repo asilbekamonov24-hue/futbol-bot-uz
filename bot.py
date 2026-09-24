@@ -10,17 +10,12 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
-# Bot tokeningizni shu yerga yozasiz
 TOKEN = "8725274573:AAEvuyrQ_hk6hNBilQqC1eAa_15c27wwA"
+ADMIN_ID = 703706449
 
-# O'zingizning Telegram ID raqamingizni yozasiz
-ADMIN_ID = 703706449  # <--- O'z ID raqamingizni yozing!
-
-# --- BAZA BILAN ISHLASH QISMI ---
 def init_db():
     conn = sqlite3.connect("futbol_bazasi.db")
     cursor = conn.cursor()
-    # Prognozlarni saqlash uchun jadval yaratamiz
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS forecasts (
             forecast_type TEXT PRIMARY KEY,
@@ -48,10 +43,8 @@ def get_forecasti(f_type: str):
     conn.close()
     return row[0] if row else None
 
-# Dastur ishga tushganda bazani tayyorlab qo'yamiz
 init_db()
 
-# foydali uchun menyu tugmalari
 asosiy_menyu = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📅 Kunlik prognoz"), KeyboardButton(text="📅 Haftalik prognoz")]
@@ -61,47 +54,43 @@ asosiy_menyu = ReplyKeyboardMarkup(
 
 dp = Dispatcher()
 
-# /start komandasi
 @dp.message(CommandStart())
 async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
-    foydalanuvchi_nomi = html.iqtibos(message.from_user.ism)
+    foydalanuvchi_nomi = html.iqtibos(message.from_user.first_name)
     await message.answer(
         f"Salom, {foydalanuvchi_nomi}! Futbol prognoz botiga xush kelibsiz.\n"
         f"Quyidagi tugmalardan birini tanlang:",
         reply_markup=asosiy_menyu
     )
 
-# --- ADMIN QISMI ---
 @dp.message(Command('kundalik_ornatish'))
-    if message.from_user.identifikatsiya != ADMIN_ID:
-        await message.answer("Sizda bu buyruq'i huquqi yo'q!")
+async def kundalik_baholashni_ornatish(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
         return
 
-    matn = message.matn.almashtirish("/kundalik_to'plam", "").chiziq()
+    matn = message.text.replace("/kundalik_ornatish", "").strip()
     if not matn:
-        await message.answer("Iltimos, prognoz matnini ham yozing! Masalan:\n/set_daily Real vs Barcelona - G'alaba 1")
+        await message.answer("Iltimos, prognoz matnini ham yozing! Masalan:\n/kundalik_ornatish Real vs Barcelona - G'alaba 1")
         return
 
-    # Bazaga saqlaymiz
     save_forecast("kundalik", matn)
     await message.answer("✅ Kunlik prognoz bazaga saqlandi va foydalanuvchilarga ochildi!")
 
 @dp.message(Command('haftalik_toplam'))
 async def haftalik_prognozni_belgilash(message: Message):
-    if message.from_user.identifikatsiya != ADMIN_ID:
-        await message.answer("Sizda bu buyruq'i huquqi yo'q!")
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
         return
 
-    matn = message.matn.almashtirish("/haftalik_to'plam", "").chiziq()
+    matn = message.text.replace("/haftalik_toplam", "").strip()
     if not matn:
         await message.answer("Iltimos, haftalik prognoz matnini ham yozing!")
         return
 
-    # Bazaga saqlaymiz
     save_forecast("haftalik", matn)
-        await message.answer("✅ Haftalik prognoz bazaga saqlandi!")
+    await message.answer("✅ Haftalik prognoz bazaga saqlandi!")
 
-# --- FOYDALANUVCHI TUGMALARI ---
 @dp.message()
 async def matn_ishlovchisi(message: Message) -> None:
     if message.text == "📅 Kunlik prognoz":
@@ -120,7 +109,6 @@ async def matn_ishlovchisi(message: Message) -> None:
     else:
         await message.answer("Iltimos, pastdagi tugmalardan foydalaning.")
 
-# Render uchun oddiy veb-server (port ochish uchun)
 async def handle(request):
     return web.Response(text="Bot ishlayapti!")
 
