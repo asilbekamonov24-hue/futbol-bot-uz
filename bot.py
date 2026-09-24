@@ -248,11 +248,9 @@ async def ai_tahlil_yaratish(message: Message):
     waiting_msg = await message.answer("🤖 Sun'iy intellekt tahlil tayyorlamoqda, biroz kuting...")
 
     try:
-        # Gemini orqali tahlil generatsiya qilish
         response = ai_model.generate_content(prompt)
         ai_text = response.text
 
-        # Bazaga saqlash
         save_forecast("ai_tahlil", ai_text)
         
         await waiting_msg.edit_text("✅ AI tahlil muvaffaqiyatli yaratildi va bazaga saqlandi! Foydalanuvchilar '🤖 AI Tahlil' tugmasi orqali o'qishlari mumkin.")
