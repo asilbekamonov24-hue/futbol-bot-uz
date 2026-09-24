@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, PollAnswer
 
 # Xavfsizlik uchun Token va Admin ID Render Environment Variables'dan o'qiladi
 TOKEN = os.getenv("TOKEN")
@@ -23,16 +23,61 @@ def init_db():
     try:
         conn = sqlite3.connect("futbol_bazasi.db")
         cursor = conn.cursor()
+        # Prognozlar jadvali
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS forecasts (
                 forecast_type TEXT PRIMARY KEY,
                 content TEXT
             )
         """)
+        # Foydalanuvchilar bazasi (Statistika va Broadcast uchun)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                full_name TEXT
+            )
+        """)
         conn.commit()
         conn.close()
     except Exception as e:
         logging.error(f"Ma'lumotlar bazasini yaratishda xatolik: {e}")
+
+def add_user(user_id: int, full_name: str):
+    try:
+        conn = sqlite3.connect("futbol_bazasi.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR IGNORE INTO users (user_id, full_name) 
+            VALUES (?, ?)
+        """, (user_id, full_name))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"Foydalanuvchini qo'shishda xatolik: {e}")
+
+def get_total_users():
+    try:
+        conn = sqlite3.connect("futbol_bazasi.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+    except Exception as e:
+        logging.error(f"Foydalanuvchilar sonini olishda xatolik: {e}")
+        return 0
+
+def get_all_users():
+    try:
+        conn = sqlite3.connect("futbol_bazasi.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM users")
+        users = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return users
+    except Exception as e:
+        logging.error(f"Foydalanuvchilar ro'yxatini olishda xatolik: {e}")
+        return []
 
 def save_forecast(f_type: str, content: str):
     try:
@@ -73,6 +118,10 @@ dp = Dispatcher()
 @dp.message(CommandStart())
 async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
     try:
+        user_id = message.from_user.id
+        full_name = message.from_user.full_name or "Foydalanuvchi"
+        add_user(user_id, full_name)
+
         foydalanuvchi_nomi = html.quote(message.from_user.first_name)
         await message.answer(
             f"Salom, {foydalanuvchi_nomi}! Futbol prognoz botiga xush kelibsiz.\n"
@@ -81,6 +130,78 @@ async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
         )
     except Exception as e:
         logging.error(f"Start buyrug'ida xatolik: {e}")
+
+# 1. Foydalanuvchilar statistikasi (/stat)
+@dp.message(Command('stat'))
+async def bot_statistikasi(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
+        return
+    
+    total = get_total_users()
+    await message.answer(f"📊 **Bot statistikasi:**\n\nJami foydalanuvchilar soni: <b>{total}</b> ta")
+
+# 2. Ovoz berish yaratish (/poll) - Admin buyrug'i
+@dp.message(Command('poll'))
+async def create_poll(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
+        return
+
+    # Masalan: /poll Real Madrid - Barcelona|Real yutadi|Barcelona yutadi|Durang
+    text = message.text.replace("/poll", "").strip()
+    if not text or "|" not in text:
+        await message.answer(
+            "Iltimos, to'g'ri formatda yozing:\n"
+            "<code>/poll Savol matni?|Variant 1|Variant 2|Variant 3</code>"
+        )
+        return
+
+    parts = [p.strip() for p in text.split("|")]
+    question = parts[0]
+    options = parts[1:]
+
+    if len(options) < 2:
+        await message.answer("Kamida 2 ta variant bo'lishi kerak!")
+        return
+
+    try:
+        await message.bot.send_poll(
+            chat_id=message.chat.id,
+            question=question,
+            options=options,
+            is_anonymous=False
+        )
+    except Exception as e:
+        await message.answer(f"Ovoz berishni ochishda xatolik: {e}")
+
+# 3. Barchaga xabar yuborish (Broadcast)
+@dp.message(Command('broadcast'))
+async def broadcast_message(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
+        return
+
+    text = message.text.replace("/broadcast", "").strip()
+    if not text:
+        await message.answer("Iltimos, yubormoqchi bo'lgan xabar matnini yozing!\nMisol: <code>/broadcast E'lon: Bugun muhim o'yin bor!</code>")
+        return
+
+    users = get_all_users()
+    success = 0
+    failed = 0
+
+    await message.answer(f"⏳ Xabar {len(users)} ta foydalanuvchiga yuborilmoqda...")
+
+    for uid in users:
+        try:
+            await message.bot.send_message(chat_id=uid, text=f"📢 <b>E'lon:</b>\n\n{text}")
+            success += 1
+            await asyncio.sleep(0.05) # Telegram limitiga tushmaslik uchun kichik tanaffus
+        except Exception:
+            failed += 1
+
+    await message.answer(f"✅ Xabar tarqatildi!\n\n• Muvaffaqiyatli: {success}\n• Xatolik (bloklaganlar): {failed}")
 
 @dp.message(Command('kundalik_ornatish'))
 async def kundalik_baholashni_ornatish(message: Message):
@@ -146,7 +267,7 @@ async def web_app():
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    print("Bot xavfsiz rejimda bazasi bilan ishga tushdi va uxlab qolmaydi...")
+    print("Bot yangi funksiyalar bilan xavfsiz rejimda ishga tushdi...")
     await asyncio.gather(web_app(), dp.start_polling(bot))
 
 if __name__ == "__main__":
