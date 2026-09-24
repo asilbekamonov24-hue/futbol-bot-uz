@@ -10,38 +10,54 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
-TOKEN = "8725274573:AAGiiJtz9sRo_j6aEavG3_f2atDMJ4u6ats"
-ADMIN_ID = 703706449
+# Xavfsizlik uchun Token va Admin ID Render Environment Variables'dan o'qiladi
+TOKEN = os.getenv("TOKEN")
+ADMIN_ID_STR = os.getenv("ADMIN_ID")
+ADMIN_ID = int(ADMIN_ID_STR) if ADMIN_ID_STR else None
+
+if not TOKEN or not ADMIN_ID:
+    logging.error("XATOLIK: TOKEN yoki ADMIN_ID topilmadi! Render Environment Variables'ni tekshiring.")
+    sys.exit(1)
 
 def init_db():
-    conn = sqlite3.connect("futbol_bazasi.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS forecasts (
-            forecast_type TEXT PRIMARY KEY,
-            content TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect("futbol_bazasi.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS forecasts (
+                forecast_type TEXT PRIMARY KEY,
+                content TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"Ma'lumotlar bazasini yaratishda xatolik: {e}")
 
 def save_forecast(f_type: str, content: str):
-    conn = sqlite3.connect("futbol_bazasi.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        REPLACE INTO forecasts (forecast_type, content) 
-        VALUES (?, ?)
-    """, (f_type, content))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect("futbol_bazasi.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            REPLACE INTO forecasts (forecast_type, content) 
+            VALUES (?, ?)
+        """, (f_type, content))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"Prognozni saqlashda xatolik: {e}")
 
 def get_forecasti(f_type: str):
-    conn = sqlite3.connect("futbol_bazasi.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT content FROM forecasts WHERE forecast_type = ?", (f_type,))
-    row = cursor.fetchone()
-    conn.close()
-    return row[0] if row else None
+    try:
+        conn = sqlite3.connect("futbol_bazasi.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT content FROM forecasts WHERE forecast_type = ?", (f_type,))
+        row = cursor.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception as e:
+        logging.error(f"Prognozni o'qishda xatolik: {e}")
+        return None
 
 init_db()
 
@@ -56,12 +72,15 @@ dp = Dispatcher()
 
 @dp.message(CommandStart())
 async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
-    foydalanuvchi_nomi = html.iqtibos(message.from_user.first_name)
-    await message.answer(
-        f"Salom, {foydalanuvchi_nomi}! Futbol prognoz botiga xush kelibsiz.\n"
-        f"Quyidagi tugmalardan birini tanlang:",
-        reply_markup=asosiy_menyu
-    )
+    try:
+        foydalanuvchi_nomi = html.quote(message.from_user.first_name)
+        await message.answer(
+            f"Salom, {foydalanuvchi_nomi}! Futbol prognoz botiga xush kelibsiz.\n"
+            f"Quyidagi tugmalardan birini tanlang:",
+            reply_markup=asosiy_menyu
+        )
+    except Exception as e:
+        logging.error(f"Start buyrug'ida xatolik: {e}")
 
 @dp.message(Command('kundalik_ornatish'))
 async def kundalik_baholashni_ornatish(message: Message):
@@ -93,21 +112,24 @@ async def haftalik_prognozni_belgilash(message: Message):
 
 @dp.message()
 async def matn_ishlovchisi(message: Message) -> None:
-    if message.text == "📅 Kunlik prognoz":
-        kundalik_matn = get_forecasti("kundalik")
-        if kundalik_matn is None:
-            await message.answer("⏳ Bugun o'yinlar hali tahlil qilinmoqda, birozdan so'ng tekshiring.")
-        else:
-            await message.answer(f"📊 **Bugungi kunlik prognoz:**\n\n{kundalik_matn}")
+    try:
+        if message.text == "📅 Kunlik prognoz":
+            kundalik_matn = get_forecasti("kundalik")
+            if kundalik_matn is None:
+                await message.answer("⏳ Bugun o'yinlar hali tahlil qilinmoqda, birozdan so'ng tekshiring.")
+            else:
+                await message.answer(f"📊 **Bugungi kunlik prognoz:**\n\n{kundalik_matn}")
 
-    elif message.text == "📅 Haftalik prognoz":
-        haftalik_matn = get_forecasti("haftalik")
-        if haftalik_matn is None:
-            await message.answer("⏳ Haftalik o'yinlar hali tahlil qilinmoqda, birozdan so'ng.")
+        elif message.text == "📅 Haftalik prognoz":
+            haftalik_matn = get_forecasti("haftalik")
+            if haftalik_matn is None:
+                await message.answer("⏳ Haftalik o'yinlar hali tahlil qilinmoqda, birozdan so'ng.")
+            else:
+                await message.answer(f"📊 **Haftalik prognoz:**\n\n{haftalik_matn}")
         else:
-            await message.answer(f"📊 **Haftalik prognoz:**\n\n{haftalik_matn}")
-    else:
-        await message.answer("Iltimos, pastdagi tugmalardan foydalaning.")
+            await message.answer("Iltimos, pastdagi tugmalardan foydalaning.")
+    except Exception as e:
+        logging.error(f"Matn ishlovchisida xatolik: {e}")
 
 async def handle(request):
     return web.Response(text="Bot ishlayapti!")
@@ -124,7 +146,7 @@ async def web_app():
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    print("Bot ma'lumotlar bazasi bilan ishga tushdi va uxlab qolmaydi...")
+    print("Bot xavfsiz rejimda bazasi bilan ishga tushdi va uxlab qolmaydi...")
     await asyncio.gather(web_app(), dp.start_polling(bot))
 
 if __name__ == "__main__":
