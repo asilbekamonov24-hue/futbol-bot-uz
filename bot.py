@@ -72,8 +72,7 @@ async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
     )
 
 # --- ADMIN QISMI ---
-@dp.message(Command("kundalik_o'rnatish"))
-async def kundalik_baholashni_o'rnatish(message: Message):
+@dp.message(Command('kundalik_ornatish'))
     if message.from_user.identifikatsiya != ADMIN_ID:
         await message.answer("Sizda bu buyruq'i huquqi yo'q!")
         return
@@ -87,7 +86,7 @@ async def kundalik_baholashni_o'rnatish(message: Message):
     save_forecast("kundalik", matn)
     await message.answer("✅ Kunlik prognoz bazaga saqlandi va foydalanuvchilarga ochildi!")
 
-@dp.message(Command("haftalik_to'plam"))
+@dp.message(Command('haftalik_toplam'))
 async def haftalik_prognozni_belgilash(message: Message):
     if message.from_user.identifikatsiya != ADMIN_ID:
         await message.answer("Sizda bu buyruq'i huquqi yo'q!")
