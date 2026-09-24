@@ -2,6 +2,8 @@ import asyncio
 import logging
 import sys
 import sqlite3
+import os
+from aiohttp import web
 from aiogram import Bot, Dispatcher, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -9,10 +11,10 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
 # Bot tokeningizni shu yerga yozasiz
-TOKEN = "8725274573:AAEVuyrQ_hK6bHNBilQqClteAa_15c27wwA"
+TOKEN = "8725274573:AAEvuyrQ_hk6hNBilQqC1eAa_15c27wwA"
 
 # O'zingizning Telegram ID raqamingizni yozasiz
-ADMIN_ID = 7035706449  # <--- O'z ID raqamingizni yozing!
+ADMIN_ID = 703706449  # <--- O'z ID raqamingizni yozing!
 
 # --- BAZA BILAN ISHLASH QISMI ---
 def init_db():
@@ -32,13 +34,13 @@ def save_forecast(f_type: str, content: str):
     conn = sqlite3.connect("futbol_bazasi.db")
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT OR REPLACE INTO forecasts (forecast_type, content)
+        REPLACE INTO forecasts (forecast_type, content) 
         VALUES (?, ?)
     """, (f_type, content))
     conn.commit()
     conn.close()
 
-def get_forecast(f_type: str):
+def get_forecasti(f_type: str):
     conn = sqlite3.connect("futbol_bazasi.db")
     cursor = conn.cursor()
     cursor.execute("SELECT content FROM forecasts WHERE forecast_type = ?", (f_type,))
@@ -49,10 +51,10 @@ def get_forecast(f_type: str):
 # Dastur ishga tushganda bazani tayyorlab qo'yamiz
 init_db()
 
-# Foydalanuvchi uchun asosiy menyu tugmalari
-main_menu = ReplyKeyboardMarkup(
+# foydali uchun menyu tugmalari
+asosiy_menyu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="📅 Kunlik prognoz"), KeyboardButton(text="📆 Haftalik prognoz")]
+        [KeyboardButton(text="📅 Kunlik prognoz"), KeyboardButton(text="📅 Haftalik prognoz")]
     ],
     resize_keyboard=True
 )
@@ -61,69 +63,82 @@ dp = Dispatcher()
 
 # /start komandasi
 @dp.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
-    user_name = html.quote(message.from_user.first_name)
+async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
+    foydalanuvchi_nomi = html.iqtibos(message.from_user.ism)
     await message.answer(
-        f"Salom, {user_name}! Futbol prognoz botiga xush kelibsiz.\n"
+        f"Salom, {foydalanuvchi_nomi}! Futbol prognoz botiga xush kelibsiz.\n"
         f"Quyidagi tugmalardan birini tanlang:",
-        reply_markup=main_menu
+        reply_markup=asosiy_menyu
     )
 
 # --- ADMIN QISMI ---
-@dp.message(Command("set_daily"))
-async def set_daily_forecast(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("Sizda bu buyruqni ishlatish huquqi yo'q!")
+@dp.message(Command("kundalik_o'rnatish"))
+async def kundalik_baholashni_o'rnatish(message: Message):
+    if message.from_user.identifikatsiya != ADMIN_ID:
+        await message.answer("Sizda bu buyruq'i huquqi yo'q!")
         return
-    
-    text = message.text.replace("/set_daily", "").strip()
-    if not text:
-        await message.answer("Iltimos, prognoz matnini ham yozing! Masalan:\n`/set_daily Real vs Barcelona - G'alaba 1`")
+
+    matn = message.matn.almashtirish("/kundalik_to'plam", "").chiziq()
+    if not matn:
+        await message.answer("Iltimos, prognoz matnini ham yozing! Masalan:\n/set_daily Real vs Barcelona - G'alaba 1")
         return
-    
+
     # Bazaga saqlaymiz
-    save_forecast("daily", text)
+    save_forecast("kundalik", matn)
     await message.answer("✅ Kunlik prognoz bazaga saqlandi va foydalanuvchilarga ochildi!")
 
-@dp.message(Command("set_weekly"))
-async def set_weekly_forecast(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("Sizda bu buyruqni ishlatish huquqi yo'q!")
+@dp.message(Command("haftalik_to'plam"))
+async def haftalik_prognozni_belgilash(message: Message):
+    if message.from_user.identifikatsiya != ADMIN_ID:
+        await message.answer("Sizda bu buyruq'i huquqi yo'q!")
         return
-    
-    text = message.text.replace("/set_weekly", "").strip()
-    if not text:
+
+    matn = message.matn.almashtirish("/haftalik_to'plam", "").chiziq()
+    if not matn:
         await message.answer("Iltimos, haftalik prognoz matnini ham yozing!")
         return
-    
-    # Bazaga saqlaymiz
-    save_forecast("weekly", text)
-    await message.answer("✅ Haftalik prognoz bazaga saqlandi!")
 
+    # Bazaga saqlaymiz
+    save_forecast("haftalik", matn)
+        await message.answer("✅ Haftalik prognoz bazaga saqlandi!")
 
 # --- FOYDALANUVCHI TUGMALARI ---
 @dp.message()
-async def text_handler(message: Message) -> None:
+async def matn_ishlovchisi(message: Message) -> None:
     if message.text == "📅 Kunlik prognoz":
-        daily_text = get_forecast("daily")
-        if daily_text is None:
-            await message.answer("⏳ Bugungi o'yinlar hali tahlil qilinmoqda, birozdan so'ng tekshiring.")
+        kundalik_matn = get_forecasti("kundalik")
+        if kundalik_matn is None:
+            await message.answer("⏳ Bugun o'yinlar hali tahlil qilinmoqda, birozdan so'ng tekshiring.")
         else:
-            await message.answer(f"📊 **Bugungi kunlik prognoz:**\n\n{daily_text}")
-            
-    elif message.text == "📆 Haftalik prognoz":
-        weekly_text = get_forecast("weekly")
-        if weekly_text is None:
-            await message.answer("⏳ Haftalik o'yinlar hali tahlil qilinmoqda, birozdan so'ng tekshiring.")
+            await message.answer(f"📊 **Bugungi kunlik prognoz:**\n\n{kundalik_matn}")
+
+    elif message.text == "📅 Haftalik prognoz":
+        haftalik_matn = get_forecasti("haftalik")
+        if haftalik_matn is None:
+            await message.answer("⏳ Haftalik o'yinlar hali tahlil qilinmoqda, birozdan so'ng.")
         else:
-            await message.answer(f"📅 **Haftalik prognoz:**\n\n{weekly_text}")
+            await message.answer(f"📊 **Haftalik prognoz:**\n\n{haftalik_matn}")
     else:
         await message.answer("Iltimos, pastdagi tugmalardan foydalaning.")
+
+# Render uchun oddiy veb-server (port ochish uchun)
+async def handle(request):
+    return web.Response(text="Bot ishlayapti!")
+
+app = web.Application()
+app.add_routes([web.get("/", handle)])
+
+async def web_app():
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     print("Bot ma'lumotlar bazasi bilan ishga tushdi va uxlab qolmaydi...")
-    await dp.start_polling(bot)
+    await asyncio.gather(web_app(), dp.start_polling(bot))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
