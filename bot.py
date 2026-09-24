@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
 # Xavfsizlik uchun Token va Admin ID Render Environment Variables'dan o'qiladi
 TOKEN = os.getenv("TOKEN")
@@ -139,7 +139,7 @@ async def bot_statistikasi(message: Message):
         return
     
     total = get_total_users()
-    await message.answer(f"📊 **Bot statistikasi:**\n\nJami foydalanuvchilar soni: <b>{total}</b> ta")
+    await message.answer(f"📊 <b>Bot statistikasi:</b>\n\nJami foydalanuvchilar soni: <b>{total}</b> ta", parse_mode=ParseMode.HTML)
 
 # 2. Barcha foydalanuvchilarga Ovoz berish tarqatish (/poll)
 @dp.message(Command('poll'))
@@ -177,7 +177,7 @@ async def create_poll(message: Message):
                 chat_id=uid,
                 question=question,
                 options=options,
-                is_anonymous=False
+                is_anonymous=True  # Telegram shaxsiy chatlari uchun True bo'lishi shart
             )
             success += 1
             await asyncio.sleep(0.05)
