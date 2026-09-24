@@ -10,7 +10,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
-TOKEN = "8725274573:AAEvuyrQ_hk6hNBilQqC1eAa_15c27wwA"
+TOKEN = "8725274573:AAGiiJtz9sRo_j6aEavG3_f2atDMJ4u6ats"
 ADMIN_ID = 703706449
 
 def init_db():
