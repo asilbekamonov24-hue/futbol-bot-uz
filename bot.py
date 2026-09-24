@@ -29,14 +29,12 @@ def init_db():
     try:
         conn = sqlite3.connect("futbol_bazasi.db")
         cursor = conn.cursor()
-        # Prognozlar jadvali
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS forecasts (
                 forecast_type TEXT PRIMARY KEY,
                 content TEXT
             )
         """)
-        # Foydalanuvchilar bazasi (Statistika va Broadcast uchun)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
@@ -138,7 +136,6 @@ async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
     except Exception as e:
         logging.error(f"Start buyrug'ida xatolik: {e}")
 
-# 1. Foydalanuvchilar statistikasi (/stat)
 @dp.message(Command('stat'))
 async def bot_statistikasi(message: Message):
     if message.from_user.id != ADMIN_ID:
@@ -148,7 +145,6 @@ async def bot_statistikasi(message: Message):
     total = get_total_users()
     await message.answer(f"📊 <b>Bot statistikasi:</b>\n\nJami foydalanuvchilar soni: <b>{total}</b> ta", parse_mode=ParseMode.HTML)
 
-# 2. Barcha foydalanuvchilarga Ovoz berish tarqatish (/poll)
 @dp.message(Command('poll'))
 async def create_poll(message: Message):
     if message.from_user.id != ADMIN_ID:
@@ -192,7 +188,6 @@ async def create_poll(message: Message):
 
     await message.answer(f"✅ Ovoz berish tarqatildi!\n\n• Muvaffaqiyatli: {success}\n• Xatolik (bloklaganlar): {failed}")
 
-# 3. Barchaga xabar yuborish (Broadcast)
 @dp.message(Command('broadcast'))
 async def broadcast_message(message: Message):
     if message.from_user.id != ADMIN_ID:
@@ -234,7 +229,6 @@ async def kundalik_baholashni_ornatish(message: Message):
     save_forecast("kundalik", matn)
     await message.answer("✅ Kunlik prognoz bazaga saqlandi va foydalanuvchilarga ochildi!")
 
-# 4. AI orqali avtomatik tahlil yaratish va saqlash (/ai_ornatish)
 @dp.message(Command('ai_ornatish'))
 async def ai_tahlil_yaratish(message: Message):
     if message.from_user.id != ADMIN_ID:
