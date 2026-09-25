@@ -11,17 +11,15 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 import google.generativeai as genai
 
-# Xavfsizlik uchun Token, Admin ID va Gemini API Key Render Environment Variables'dan o'qiladi
 TOKEN = os.getenv("TOKEN")
 ADMIN_ID_STR = os.getenv("ADMIN_ID")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 ADMIN_ID = int(ADMIN_ID_STR) if ADMIN_ID_STR else None
 
 if not TOKEN or not ADMIN_ID or not GEMINI_API_KEY:
-    logging.error("XATOLIK: TOKEN, ADMIN_ID yoki GEMINI_API_KEY topilmadi! Render Environment Variables'ni tekshiring.")
+    logging.error("XATOLIK: TOKEN, ADMIN_ID yoki GEMINI_API_KEY topilmadi!")
     sys.exit(1)
 
-# Gemini AI sozlamalari
 genai.configure(api_key=GEMINI_API_KEY)
 ai_model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -44,57 +42,17 @@ def init_db():
         conn.commit()
         conn.close()
     except Exception as e:
-        logging.error(f"Ma'lumotlar bazasini yaratishda xatolik: {e}")
+        logging.error(f"DB xatolik: {e}")
 
 def add_user(user_id: int, full_name: str):
     try:
         conn = sqlite3.connect("futbol_bazasi.db")
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR IGNORE INTO users (user_id, full_name) 
-            VALUES (?, ?)
-        """, (user_id, full_name))
+        cursor.execute("INSERT OR IGNORE INTO users (user_id, full_name) VALUES (?, ?)", (user_id, full_name))
         conn.commit()
         conn.close()
     except Exception as e:
-        logging.error(f"Foydalanuvchini qo'shishda xatolik: {e}")
-
-def get_total_users():
-    try:
-        conn = sqlite3.connect("futbol_bazasi.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM users")
-        count = cursor.fetchone()[0]
-        conn.close()
-        return count
-    except Exception as e:
-        logging.error(f"Foydalanuvchilar sonini olishda xatolik: {e}")
-        return 0
-
-def get_all_users():
-    try:
-        conn = sqlite3.connect("futbol_bazasi.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM users")
-        users = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        return users
-    except Exception as e:
-        logging.error(f"Foydalanuvchilar ro'yxatini olishda xatolik: {e}")
-        return []
-
-def save_forecast(f_type: str, content: str):
-    try:
-        conn = sqlite3.connect("futbol_bazasi.db")
-        cursor = conn.cursor()
-        cursor.execute("""
-            REPLACE INTO forecasts (forecast_type, content) 
-            VALUES (?, ?)
-        """, (f_type, content))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        logging.error(f"Prognozni saqlashda xatolik: {e}")
+        logging.error(f"User xatolik: {e}")
 
 def get_forecasti(f_type: str):
     try:
@@ -105,12 +63,11 @@ def get_forecasti(f_type: str):
         conn.close()
         return row[0] if row else None
     except Exception as e:
-        logging.error(f"Prognozni o'qishda xatolik: {e}")
+        logging.error(f"Read xatolik: {e}")
         return None
 
 init_db()
 
-# Menyu: Kunlik prognoz va AI tahlil tugmalari
 asosiy_menyu = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📅 Kunlik prognoz"), KeyboardButton(text="🤖 AI Tahlil")]
@@ -121,156 +78,48 @@ asosiy_menyu = ReplyKeyboardMarkup(
 dp = Dispatcher()
 
 @dp.message(CommandStart())
-async def buyruq_boshlash_ishlovchisi(message: Message) -> None:
+async def buyruq_boshlash(message: Message) -> None:
     try:
-        user_id = message.from_user.id
-        full_name = message.from_user.full_name or "Foydalanuvchi"
-        add_user(user_id, full_name)
-
-        foydalanuvchi_nomi = html.quote(message.from_user.first_name)
+        add_user(message.from_user.id, message.from_user.full_name or "Foydalanuvchi")
         await message.answer(
-            f"Salom, {foydalanuvchi_nomi}! Futbol prognoz botiga xush kelibsiz.\n"
-            f"Quyidagi tugmalardan birini tanlang:",
+            f"Salom, {html.quote(message.from_user.first_name)}! Futbol prognoz botiga xush kelibsiz.\nQuyidagi tugmalardan birini tanlang:",
             reply_markup=asosiy_menyu
         )
     except Exception as e:
-        logging.error(f"Start buyrug'ida xatolik: {e}")
-
-@dp.message(Command('stat'))
-async def bot_statistikasi(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
-        return
-    
-    total = get_total_users()
-    await message.answer(f"📊 <b>Bot statistikasi:</b>\n\nJami foydalanuvchilar soni: <b>{total}</b> ta", parse_mode=ParseMode.HTML)
-
-@dp.message(Command('poll'))
-async def create_poll(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
-        return
-
-    text = message.text.replace("/poll", "").strip()
-    if not text or "|" not in text:
-        await message.answer(
-            "Iltimos, to'g'ri formatda yozing:\n"
-            "<code>/poll Savol matni? | Variant 1 | Variant 2</code>"
-        )
-        return
-
-    parts = [p.strip() for p in text.split("|")]
-    question = parts[0]
-    options = parts[1:]
-
-    if len(options) < 2:
-        await message.answer("Kamida 2 ta variant bo'lishi kerak!")
-        return
-
-    users = get_all_users()
-    success = 0
-    failed = 0
-
-    await message.answer(f"⏳ Ovoz berish {len(users)} ta foydalanuvchiga tarqatilmoqda...")
-
-    for uid in users:
-        try:
-            await message.bot.send_poll(
-                chat_id=uid,
-                question=question,
-                options=options,
-                is_anonymous=True
-            )
-            success += 1
-            await asyncio.sleep(0.05)
-        except Exception:
-            failed += 1
-
-    await message.answer(f"✅ Ovoz berish tarqatildi!\n\n• Muvaffaqiyatli: {success}\n• Xatolik (bloklaganlar): {failed}")
-
-@dp.message(Command('broadcast'))
-async def broadcast_message(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
-        return
-
-    text = message.text.replace("/broadcast", "").strip()
-    if not text:
-        await message.answer("Iltimos, yubormoqchi bo'lgan xabar matnini yozing!\nMisol: <code>/broadcast E'lon: Bugun muhim o'yin bor!</code>")
-        return
-
-    users = get_all_users()
-    success = 0
-    failed = 0
-
-    await message.answer(f"⏳ Xabar {len(users)} ta foydalanuvchiga yuborilmoqda...")
-
-    for uid in users:
-        try:
-            await message.bot.send_message(chat_id=uid, text=f"📢 <b>E'lon:</b>\n\n{text}")
-            success += 1
-            await asyncio.sleep(0.05)
-        except Exception:
-            failed += 1
-
-    await message.answer(f"✅ Xabar tarqatildi!\n\n• Muvaffaqiyatli: {success}\n• Xatolik (bloklaganlar): {failed}")
-
-@dp.message(Command('kundalik_ornatish'))
-async def kundalik_baholashni_ornatish(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
-        return
-
-    matn = message.text.replace("/kundalik_ornatish", "").strip()
-    if not matn:
-        await message.answer("Iltimos, prognoz matnini ham yozing! Masalan:\n/kundalik_ornatish Real vs Barcelona - G'alaba 1")
-        return
-
-    save_forecast("kundalik", matn)
-    await message.answer("✅ Kunlik prognoz bazaga saqlandi va foydalanuvchilarga ochildi!")
+        logging.error(f"Start xatolik: {e}")
 
 @dp.message(Command('ai_ornatish'))
 async def ai_tahlil_yaratish(message: Message):
     if message.from_user.id != ADMIN_ID:
-        await message.answer("Sizda bu buyruq uchun huquq yo'q!")
+        await message.answer("Sizda huquq yo'q!")
         return
 
     prompt = message.text.replace("/ai_ornatish", "").strip()
     if not prompt:
-        prompt = "Futbol bo'yicha bugungi eng asosiy o'yinlar uchun professional tahlil va prognoz tuzib ber, koeffitsiyentlari bilan o'zbek tilida yoz."
+        prompt = "Futbol bo'yicha bugungi o'yinlar uchun professional tahlil tuzib ber."
 
-    waiting_msg = await message.answer("🤖 Sun'iy intellekt tahlil tayyorlamoqda, biroz kuting...")
-
+    waiting_msg = await message.answer("🤖 AI tahlil tayyorlamoqda...")
     try:
         response = ai_model.generate_content(prompt)
-        ai_text = response.text
-
-        save_forecast("ai_tahlil", ai_text)
-        
-        await waiting_msg.edit_text("✅ AI tahlil muvaffaqiyatli yaratildi va bazaga saqlandi! Foydalanuvchilar '🤖 AI Tahlil' tugmasi orqali o'qishlari mumkin.")
+        conn = sqlite3.connect("futbol_bazasi.db")
+        cursor = conn.cursor()
+        cursor.execute("REPLACE INTO forecasts (forecast_type, content) VALUES (?, ?)", ("ai_tahlil", response.text))
+        conn.commit()
+        conn.close()
+        await waiting_msg.edit_text("✅ AI tahlil tayyorlandi va bazaga saqlandi!")
     except Exception as e:
-        await waiting_msg.edit_text(f"❌ AI tahlilni yaratishda xatolik yuz berdi: {e}")
+        await waiting_msg.edit_text(f"❌ Xatolik: {e}")
 
 @dp.message()
 async def matn_ishlovchisi(message: Message) -> None:
-    try:
-        if message.text == "📅 Kunlik prognoz":
-            kundalik_matn = get_forecasti("kundalik")
-            if kundalik_matn is None:
-                await message.answer("⏳ Bugun o'yinlar hali tahlil qilinmoqda, birozdan so'ng tekshiring.")
-            else:
-                await message.answer(f"📊 **Bugungi kunlik prognoz:**\n\n{kundalik_matn}")
-
-        elif message.text == "🤖 AI Tahlil":
-            ai_matn = get_forecasti("ai_tahlil")
-            if ai_matn is None:
-                await message.answer("⏳ Hozircha AI tahlil tayyorlanmagan, birozdan so'ng urinib ko'ring.")
-            else:
-                await message.answer(f"🤖 **Sun'iy intellekt tahlili:**\n\n{ai_matn}")
-        else:
-            await message.answer("Iltimos, pastdagi tugmalardan foydalaning.")
-    except Exception as e:
-        logging.error(f"Matn ishlovchisida xatolik: {e}")
+    if message.text == "📅 Kunlik prognoz":
+        matn = get_forecasti("kundalik")
+        await message.answer(matn if matn else "⏳ Hozircha kunlik prognoz yo'q.")
+    elif message.text == "🤖 AI Tahlil":
+        matn = get_forecasti("ai_tahlil")
+        await message.answer(matn if matn else "⏳ Hozircha AI tahlil yo'q.")
+    else:
+        await message.answer("Iltimos, pastdagi tugmalardan foydalaning.")
 
 async def handle(request):
     return web.Response(text="Bot ishlayapti!")
@@ -287,7 +136,7 @@ async def web_app():
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    print("Bot AI tahlil funksiyasi bilan ishga tushdi...")
+    print("Bot muvaffaqiyatli ishga tushdi...")
     await asyncio.gather(web_app(), dp.start_polling(bot))
 
 if __name__ == "__main__":
