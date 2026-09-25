@@ -1,20 +1,16 @@
 import asyncio
 import logging
 import os
+import aiohttp
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
-import google.generativeai as genai
 
 # --- SOZLAMALAR ---
 TOKEN = os.getenv("TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Gemini API ni to'g'ri sozlash
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Bot va Dispatcher yaratish
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -45,28 +41,40 @@ async def cmd_start(message: types.Message):
 async def daily_forecast(message: types.Message):
     await message.answer("📊 **Bugungi kunlik prognoz:**\n\nReal vs Barcelona - Bugun barca g'alaba qozonishi kutilmoqda")
 
-# --- AI PROGNOZ (5 TA O'YIN TAHLILI) ---
+# --- AI PROGNOZ (REST API ORQALI) ---
 @dp.message(F.text == "🤖 AI Prognoz")
 async def ai_forecast(message: types.Message):
     await message.answer("⏳ Sun'iy intellekt bugungi eng yaxshi 5 ta futbol o'yinini tahlil qilmoqda, biroz kuting...")
     
+    prompt = (
+        "Bugungi kundagi eng muhim yoki mashhur 5 ta futbol o'yini uchun professional bashorat va tahlil tuzib ber. "
+        "Har bir o'yin uchun jamoalar nomi, taxminiy natija va qisqacha tahlil yoz. "
+        "Javobni chiroyli va tushunarli formatda O'zbek tilida taqdim et."
+    )
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
     try:
-        # Gemini-1.5-flash modelidan foydalanish
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = (
-            "Bugungi kundagi eng muhim yoki mashhur 5 ta futbol o'yini uchun professional bashorat va tahlil tuzib ber. "
-            "Har bir o'yin uchun jamoalar nomi, taxminiy natija va qisqacha tahlil yoz. "
-            "Javobni chiroyli va tushunarli formatda O'zbek tilida taqdim et."
-        )
-        response = model.generate_content(prompt)
-        ai_text = response.text
-        
-        if len(ai_text) > 4000:
-            ai_text = ai_text[:4000]
-            
-        await message.answer(f"🤖 **Sun'iy Intellekt Tahlili (Top 5 O'yin):**\n\n{ai_text}")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, headers=headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    if len(ai_text) > 4000:
+                        ai_text = ai_text[:4000]
+                    await message.answer(f"🤖 **Sun'iy Intellekt Tahlili (Top 5 O'yin):**\n\n{ai_text}")
+                else:
+                    err_text = await response.text()
+                    print(f"API Xatolik: {err_text}")
+                    await message.answer("❌ AI tahlilini olishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.")
     except Exception as e:
-        print(f"AI Xatolik: {e}")
+        print(f"Ulanish xatosi: {e}")
         await message.answer("❌ AI tahlilini olishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.")
 
 # --- RENDER UCHUN WEB SERVER ---
