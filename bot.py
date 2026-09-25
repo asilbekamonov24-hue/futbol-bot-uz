@@ -7,8 +7,9 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 
-# --- SOZLAMALAR (Render muhitidan o'qiydi) ---
-TOKEN = os.getenv("BOT_TOKEN")
+# --- SOZLAMALAR ---
+# Render Environment Variables'dagi nomlarga moslashtirildi
+TOKEN = os.getenv("TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Gemini API ni sozlash
@@ -51,6 +52,7 @@ async def ai_forecast(message: types.Message):
     await message.answer("⏳ Sun'iy intellekt bugungi eng yaxshi 5 ta futbol o'yinini tahlil qilmoqda, biroz kuting...")
     
     try:
+        # Gemini orqali 5 ta o'yin prognozini shakllantirish
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = (
             "Bugungi kundagi eng muhim yoki mashhur 5 ta futbol o'yini uchun professional bashorat va tahlil tuzib ber. "
