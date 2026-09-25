@@ -1,18 +1,17 @@
 import asyncio
 import logging
 import os
-import google.generativeai as genai
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
+import google.generativeai as genai
 
 # --- SOZLAMALAR ---
-# Render Environment Variables'dagi nomlarga moslashtirildi
 TOKEN = os.getenv("TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Gemini API ni sozlash
+# Gemini API ni to'g'ri sozlash
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Bot va Dispatcher yaratish
@@ -52,7 +51,7 @@ async def ai_forecast(message: types.Message):
     await message.answer("⏳ Sun'iy intellekt bugungi eng yaxshi 5 ta futbol o'yinini tahlil qilmoqda, biroz kuting...")
     
     try:
-        # Gemini orqali 5 ta o'yin prognozini shakllantirish
+        # Gemini-1.5-flash modelidan foydalanish
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = (
             "Bugungi kundagi eng muhim yoki mashhur 5 ta futbol o'yini uchun professional bashorat va tahlil tuzib ber. "
@@ -67,6 +66,7 @@ async def ai_forecast(message: types.Message):
             
         await message.answer(f"🤖 **Sun'iy Intellekt Tahlili (Top 5 O'yin):**\n\n{ai_text}")
     except Exception as e:
+        print(f"AI Xatolik: {e}")
         await message.answer("❌ AI tahlilini olishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.")
 
 # --- RENDER UCHUN WEB SERVER ---
