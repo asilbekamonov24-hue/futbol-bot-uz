@@ -28,9 +28,9 @@ TRANSLATIONS = {
         "help_btn": "ℹ️ Yordam",
         "settings_btn": "⚙️ Sozlamalar",
         "daily_text": "📊 **Bugungi kunlik prognoz:**\n\nReal Madrid vs Barcelona - O'yin shiddatli o'tishi va jamoalar gol almashishi kutilmoqda.",
-        "match_wait": "⏳ Bugungi o'yinlar taqvimi va natijalari yuklanmoqda...",
-        "match_title": "📅 **Bugungi Match-center (O'yinlar va Natijalar):**\n\n• Real Madrid 2:1 Barcelona (Tugadi)\n• Manchester City vs Arsenal (21:00)\n• Bayern Munich vs Dortmund (23:30)\n• Milan vs Inter (00:45)",
-        "ai_wait": "⏳ Sun'iy intellekt tahlil qilmoqda...",
+        "match_wait": "⏳ Bugungi real vaqtdagi o'yinlar taqvimi va natijalari internetdan qidirilmoqda...",
+        "match_title": "📅 **Bugungi Match-center (Real Vaqt O'yinlari va Natijalar):**",
+        "ai_wait": "⏳ Sun'iy intellekt bugungi real vaqtdagi o'yinlarni tahlil qilmoqda...",
         "ai_title": "🤖 AI Real Vaqt Tahlili:",
         "error": "❌ Ma'lumot olishda xatolik yuz berdi.",
         "settings_menu": "⚙️ **Sozlamalar bo'limi:**\nBot tilini o'zgartirish uchun pastdagi tugmani bosing:",
@@ -45,9 +45,9 @@ TRANSLATIONS = {
         "help_btn": "ℹ️ Помощь",
         "settings_btn": "⚙️ Настройки",
         "daily_text": "📊 **Прогноз на сегодня:**\n\nРеал Мадрид против Барселоны - Ожидается яркая игра.",
-        "match_wait": "⏳ Загрузка расписания и результатов матчей...",
-        "match_title": "📅 **Матч-центр на сегодня:**\n\n• Реал Мадрид 2:1 Барселона (Завершено)\n• Манчестер Сити vs Арсенал (21:00)\n• Бавария vs Боруссия (23:30)",
-        "ai_wait": "⏳ Искусственный интеллект анализирует...",
+        "match_wait": "⏳ Загрузка актуального расписания и результатов матчей в реальном времени...",
+        "match_title": "📅 **Матч-центр на сегодня (В реальном времени):**",
+        "ai_wait": "⏳ Искусственный интеллект анализирует матчи...",
         "ai_title": "🤖 ИИ Анализ:",
         "error": "❌ Произошла ошибка.",
         "settings_menu": "⚙️ **Настройки:**\nВыберите язык:",
@@ -62,9 +62,9 @@ TRANSLATIONS = {
         "help_btn": "ℹ️ Help",
         "settings_btn": "⚙️ Settings",
         "daily_text": "📊 **Today's Forecast:**\n\nReal Madrid vs Barcelona - Intense match expected.",
-        "match_wait": "⏳ Loading match schedule and results...",
-        "match_title": "📅 **Today's Match Center:**\n\n• Real Madrid 2:1 Barcelona (Finished)\n• Manchester City vs Arsenal (21:00)\n• Bayern Munich vs Dortmund (23:30)",
-        "ai_wait": "⏳ AI is analyzing...",
+        "match_wait": "⏳ Loading real-time match schedule and results...",
+        "match_title": "📅 **Today's Match Center (Live & Results):**",
+        "ai_wait": "AI is analyzing live matches...",
         "ai_title": "🤖 AI Analysis:",
         "error": "❌ An error occurred.",
         "settings_menu": "⚙️ **Settings:**\nSelect language:",
@@ -124,9 +124,9 @@ async def cmd_start(message: types.Message):
 async def cmd_help(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     texts = {
-        "uz": "🤖 Bot imkoniyatlari:\n• Kunlik bashoratlar\n• Match-center (O'yinlar va natijalar)\n• Real vaqtdagi AI tahlil\n• /stat - Foydalanuvchilar soni",
-        "ru": "🤖 Возможности бота:\n• Ежедневные прогнозы\n• Матч-центр (Расписание и результаты)\n• ИИ анализ\n• /stat - Количество пользователей",
-        "en": "🤖 Bot features:\n• Daily forecasts\n• Match center\n• AI analysis\n• /stat - User count"
+        "uz": "🤖 Bot imkoniyatlari:\n• Kunlik bashoratlar\n• Real vaqtdagi Match-center (O'yinlar va natijalar)\n• Real vaqtdagi AI tahlil va foizlar\n• /stat - Foydalanuvchilar soni",
+        "ru": "🤖 Возможности бота:\n• Ежедневные прогнозы\n• Матч-центр в реальном времени (Матчи и результаты)\n• ИИ анализ\n• /stat - Количество пользователей",
+        "en": "🤖 Bot features:\n• Daily forecasts\n• Real-time Match center\n• AI analysis\n• /stat - User count"
     }
     await message.answer(texts.get(lang, texts["uz"]))
 
@@ -168,21 +168,54 @@ async def daily_forecast(message: types.Message):
     t = TRANSLATIONS[lang]
     await message.answer(t["daily_text"])
 
-# --- MATCH-CENTER ---
+# --- MATCH-CENTER (REAL VAQT REJIMIDA AI ORQALI) ---
 @dp.message(F.text.in_(["📅 Match-center (O'yinlar)", "📅 Матч-центр (Матчи)", "📅 Match Center"]))
 async def match_center(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     t = TRANSLATIONS[lang]
-    await message.answer(t["match_title"], parse_mode="Markdown")
+    
+    await message.answer(t["match_wait"])
+    
+    match_prompts = {
+        "uz": "Bugungi kundagi real vaqt rejimidagi futbol o'yinlari jadvali, boshlanish vaqtlari va bo'lib o'tgan o'yinlarning hisoblarini aniq ro'yxat shaklida O'zbek tilida yozib ber.",
+        "ru": "Напиши расписание сегодняшних футбольных матчей в реальном времени, время начала и счета завершенных матчей на русском языке.",
+        "en": "Write today's real-time football match schedule, start times, and scores of finished matches in English."
+    }
+    prompt = match_prompts.get(lang, match_prompts["uz"])
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, headers=headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    match_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    if len(match_text) > 4000:
+                        match_text = match_text[:4000]
+                    await message.answer(f"{t['match_title']}\n\n{match_text}")
+                else:
+                    await message.answer(t["error"])
+    except Exception:
+        await message.answer(t["error"])
 
-# --- AI ANALIZ ---
+# --- AI ANALIZ & KOEFFITSIENTLAR ---
 @dp.message(F.text.in_(["🤖 AI Tahlil & Koeffitsientlar", "🤖 ИИ Анализ & Коэффициенты", "🤖 AI Analysis & Odds"]))
 async def ai_forecast(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     t = TRANSLATIONS[lang]
+    
     await message.answer(t["ai_wait"])
     
-    prompt = "Bugungi eng muhim futbol o'yinlari bo'yicha tahlil yoz."
+    prompts = {
+        "uz": "Bugungi eng muhim 5 ta futbol o'yini uchun g'alaba foizlari, taxminiy koeffitsientlar (Odds) va qisqacha tahlilni O'zbek tilida yoz.",
+        "ru": "Напиши анализ на 5 матчей на сегодня с процентами побед и коэффициентами на русском языке.",
+        "en": "Write analysis for 5 matches today with win percentages and odds in English."
+    }
+    prompt = prompts.get(lang, prompts["uz"])
+    
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -193,6 +226,8 @@ async def ai_forecast(message: types.Message):
                 if response.status == 200:
                     data = await response.json()
                     ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    if len(ai_text) > 4000:
+                        ai_text = ai_text[:4000]
                     await message.answer(f"{t['ai_title']}\n\n{ai_text}")
                 else:
                     await message.answer(t["error"])
