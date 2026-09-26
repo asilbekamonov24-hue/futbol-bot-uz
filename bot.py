@@ -18,47 +18,56 @@ dp = Dispatcher()
 users_db = set()
 user_settings = {}  # {user_id: {"lang": "uz/ru/en"}}
 
-# --- KOP TILLI TARJIMALAR (SNG UCHUN) ---
+# --- KOP TILLI TARJIMALAR ---
 TRANSLATIONS = {
     "uz": {
-        "welcome": "Salom, {name}! Futbol tahlil botiga xush kelibsiz. Real vaqtdagi tahlillar uchun pastdagi tugmani bosing:",
+        "welcome": "Salom, {name}! Futbol tahlil botiga xush kelibsiz. Kerakli bo'limni tanlang:",
         "daily_btn": "📊 Kunlik prognoz",
+        "match_btn": "📅 Match-center (O'yinlar)",
         "ai_btn": "🤖 AI Tahlil & Koeffitsientlar",
         "help_btn": "ℹ️ Yordam",
         "settings_btn": "⚙️ Sozlamalar",
         "daily_text": "📊 **Bugungi kunlik prognoz:**\n\nReal Madrid vs Barcelona - O'yin shiddatli o'tishi va jamoalar gol almashishi kutilmoqda.",
-        "ai_wait": "⏳ Sun'iy intellekt bugungi real vaqtdagi o'yinlarni tahlil qilib, foizlar va koeffitsientlarni hisoblamoqda...",
-        "ai_title": "🤖 AI Real Vaqt Tahlili, Foizlar va Koeffitsientlar:",
-        "error": "❌ Ma'lumot olishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.",
+        "match_wait": "⏳ Bugungi o'yinlar taqvimi va natijalari yuklanmoqda...",
+        "match_title": "📅 **Bugungi Match-center (O'yinlar va Natijalar):**\n\n• Real Madrid 2:1 Barcelona (Tugadi)\n• Manchester City vs Arsenal (21:00)\n• Bayern Munich vs Dortmund (23:30)\n• Milan vs Inter (00:45)",
+        "ai_wait": "⏳ Sun'iy intellekt tahlil qilmoqda...",
+        "ai_title": "🤖 AI Real Vaqt Tahlili:",
+        "error": "❌ Ma'lumot olishda xatolik yuz berdi.",
         "settings_menu": "⚙️ **Sozlamalar bo'limi:**\nBot tilini o'zgartirish uchun pastdagi tugmani bosing:",
         "lang_select": "🌐 Tilni tanlang:",
         "saved": "✅ Muvaffaqiyatli saqlandi!"
     },
     "ru": {
-        "welcome": "Привет, {name}! Добро пожаловать в бот футбольной аналитики. Нажмите кнопку ниже для анализа в реальном времени:",
+        "welcome": "Привет, {name}! Добро пожаловать в бот футбольной аналитики. Выберите раздел:",
         "daily_btn": "📊 Ежедневный прогноз",
+        "match_btn": "📅 Матч-центр (Матчи)",
         "ai_btn": "🤖 ИИ Анализ & Коэффициенты",
         "help_btn": "ℹ️ Помощь",
         "settings_btn": "⚙️ Настройки",
-        "daily_text": "📊 **Прогноз на сегодня:**\n\nРеал Мадрид против Барселоны - Ожидается яркая игра и голы от обеих команд.",
-        "ai_wait": "⏳ Искусственный интеллект анализирует сегодняшние матчи в реальном времени, рассчитывает проценты и коэффициенты...",
-        "ai_title": "🤖 ИИ Анализ в реальном времени, Проценты и Коэффициенты:",
-        "error": "❌ Произошла ошибка. Пожалуйста, попробуйте позже.",
-        "settings_menu": "⚙️ **Меню настроек:**\nНажмите кнопку ниже, чтобы изменить язык бота:",
+        "daily_text": "📊 **Прогноз на сегодня:**\n\nРеал Мадрид против Барселоны - Ожидается яркая игра.",
+        "match_wait": "⏳ Загрузка расписания и результатов матчей...",
+        "match_title": "📅 **Матч-центр на сегодня:**\n\n• Реал Мадрид 2:1 Барселона (Завершено)\n• Манчестер Сити vs Арсенал (21:00)\n• Бавария vs Боруссия (23:30)",
+        "ai_wait": "⏳ Искусственный интеллект анализирует...",
+        "ai_title": "🤖 ИИ Анализ:",
+        "error": "❌ Произошла ошибка.",
+        "settings_menu": "⚙️ **Настройки:**\nВыберите язык:",
         "lang_select": "🌐 Выберите язык:",
         "saved": "✅ Успешно сохранено!"
     },
     "en": {
-        "welcome": "Hello, {name}! Welcome to the Football Analytics Bot. Click the button below for real-time analysis:",
+        "welcome": "Hello, {name}! Welcome to the Football Analytics Bot. Choose a section:",
         "daily_btn": "📊 Daily Forecast",
+        "match_btn": "📅 Match Center",
         "ai_btn": "🤖 AI Analysis & Odds",
         "help_btn": "ℹ️ Help",
         "settings_btn": "⚙️ Settings",
-        "daily_text": "📊 **Today's Forecast:**\n\nReal Madrid vs Barcelona - An intense match with goals from both sides is expected.",
-        "ai_wait": "⏳ Artificial intelligence is analyzing today's live matches and calculating odds and probabilities...",
-        "ai_title": "🤖 AI Real-Time Analysis, Probabilities & Odds:",
-        "error": "❌ An error occurred. Please try again later.",
-        "settings_menu": "⚙️ **Settings Menu:**\nClick the button below to change the bot language:",
+        "daily_text": "📊 **Today's Forecast:**\n\nReal Madrid vs Barcelona - Intense match expected.",
+        "match_wait": "⏳ Loading match schedule and results...",
+        "match_title": "📅 **Today's Match Center:**\n\n• Real Madrid 2:1 Barcelona (Finished)\n• Manchester City vs Arsenal (21:00)\n• Bayern Munich vs Dortmund (23:30)",
+        "ai_wait": "⏳ AI is analyzing...",
+        "ai_title": "🤖 AI Analysis:",
+        "error": "❌ An error occurred.",
+        "settings_menu": "⚙️ **Settings:**\nSelect language:",
         "lang_select": "🌐 Select language:",
         "saved": "✅ Successfully saved!"
     }
@@ -74,7 +83,8 @@ def get_main_keyboard(lang="uz"):
     t = TRANSLATIONS.get(lang, TRANSLATIONS["uz"])
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t["daily_btn"]), KeyboardButton(text=t["ai_btn"])],
+            [KeyboardButton(text=t["daily_btn"]), KeyboardButton(text=t["match_btn"])],
+            [KeyboardButton(text=t["ai_btn"])],
             [KeyboardButton(text=t["help_btn"]), KeyboardButton(text=t["settings_btn"])]
         ],
         resize_keyboard=True
@@ -114,9 +124,9 @@ async def cmd_start(message: types.Message):
 async def cmd_help(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     texts = {
-        "uz": "🤖 Bot imkoniyatlari:\n• Kunlik bashoratlar\n• Real vaqtdagi AI tahlil, g'alaba foizlari va koeffitsientlar\n• /stat - Foydalanuvchilar soni",
-        "ru": "🤖 Возможности бота:\n• Ежедневные прогнозы\n• ИИ анализ в реальном времени, проценты и коэффициенты\n• /stat - Количество пользователей",
-        "en": "🤖 Bot features:\n• Daily forecasts\n• Real-time AI analysis, win probabilities & odds\n• /stat - User count"
+        "uz": "🤖 Bot imkoniyatlari:\n• Kunlik bashoratlar\n• Match-center (O'yinlar va natijalar)\n• Real vaqtdagi AI tahlil\n• /stat - Foydalanuvchilar soni",
+        "ru": "🤖 Возможности бота:\n• Ежедневные прогнозы\n• Матч-центр (Расписание и результаты)\n• ИИ анализ\n• /stat - Количество пользователей",
+        "en": "🤖 Bot features:\n• Daily forecasts\n• Match center\n• AI analysis\n• /stat - User count"
     }
     await message.answer(texts.get(lang, texts["uz"]))
 
@@ -158,74 +168,36 @@ async def daily_forecast(message: types.Message):
     t = TRANSLATIONS[lang]
     await message.answer(t["daily_text"])
 
-# --- AI ANALIZ, FOIZLAR VA KOEFFITSIENTLAR (TO'G'RILANGAN v1beta URL) ---
+# --- MATCH-CENTER ---
+@dp.message(F.text.in_(["📅 Match-center (O'yinlar)", "📅 Матч-центр (Матчи)", "📅 Match Center"]))
+async def match_center(message: types.Message):
+    lang = get_user_lang(message.from_user.id)
+    t = TRANSLATIONS[lang]
+    await message.answer(t["match_title"], parse_mode="Markdown")
+
+# --- AI ANALIZ ---
 @dp.message(F.text.in_(["🤖 AI Tahlil & Koeffitsientlar", "🤖 ИИ Анализ & Коэффициенты", "🤖 AI Analysis & Odds"]))
 async def ai_forecast(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     t = TRANSLATIONS[lang]
-    
     await message.answer(t["ai_wait"])
     
-    prompts = {
-        "uz": (
-            "Bugungi kundagi eng muhim real vaqt rejimidagi futbol o'yinlari uchun professional tahlil tayyorla. "
-            "Kamida 5 ta o'yinni tanlab, har biri uchun quyidagilarni aniq yoz:\n"
-            "1. Jamoalar nomi\n"
-            "2. G'alaba qozonish ehtimolligi foizlari\n"
-            "3. Taxminiy bukmekerlik koeffitsientlari (Odds)\n"
-            "4. Qisqacha ekspert tahlili.\n"
-            "Javobni oddiy matn shaklida O'zbek tilida taqdim et."
-        ),
-        "ru": (
-            "Подготовь профессиональный анализ в реальном времени на самые важные футбольные матчи на сегодня. "
-            "Выбери как минимум 5 матчей и для каждого укажи:\n"
-            "1. Названия команд\n"
-            "2. Проценты вероятности победы\n"
-            "3. Примерные букмекерские коэффициенты (Odds)\n"
-            "4. Краткий экспертный анализ.\n"
-            "Ответ предоставь в обычном текстовом формате на русском языке."
-        ),
-        "en": (
-            "Prepare a professional real-time analysis for the most important football matches today. "
-            "Select at least 5 matches and for each include:\n"
-            "1. Team names\n"
-            "2. Win probability percentages\n"
-            "3. Estimated bookmaker odds (Odds)\n"
-            "4. Brief expert analysis.\n"
-            "Provide the response in a plain text format in English."
-        )
-    }
-    prompt = prompts.get(lang, prompts["uz"])
-    
-    # v1beta versiyasi va gemini-1.5-flash modeli (Google rasmiy talabi bo'yicha)
+    prompt = "Bugungi eng muhim futbol o'yinlari bo'yicha tahlil yoz."
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
-    if not GEMINI_API_KEY:
-        await message.answer("❌ Xatolik: GEMINI_API_KEY Render'da kiritilmagan!")
-        return
-
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
-                    try:
-                        ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
-                    except (KeyError, IndexError) as ke:
-                        ai_text = f"AI javobida ma'lumot topilmadi. Tafsilot: {str(ke)}"
-                    
-                    if len(ai_text) > 4000:
-                        ai_text = ai_text[:4000]
+                    ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
                     await message.answer(f"{t['ai_title']}\n\n{ai_text}")
                 else:
-                    err_body = await response.text()
-                    print(f"API Error: {err_body}")
-                    await message.answer(f"❌ API xatosi ({response.status}): {err_body[:150]}")
-    except Exception as e:
-        print(f"Exception error: {e}")
-        await message.answer(f"❌ Tizim xatosi: {str(e)}")
+                    await message.answer(t["error"])
+    except Exception:
+        await message.answer(t["error"])
 
 # --- RENDER WEB SERVER ---
 async def handle(request):
