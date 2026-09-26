@@ -14,9 +14,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Foydalanuvchilar bazasi va ularning sozlamalari
+# Foydalanuvchilar bazasi va ularning tili
 users_db = set()
-user_settings = {}  # {user_id: {"lang": "uz/ru/en", "team": "Real Madrid"}}
+user_settings = {}  # {user_id: {"lang": "uz/ru/en"}}
 
 # --- MATNLAR (TARJIMALAR) ---
 TRANSLATIONS = {
@@ -30,8 +30,7 @@ TRANSLATIONS = {
         "ai_wait": "⏳ Sun'iy intellekt bugungi eng yaxshi 5 ta futbol o'yinini tahlil qilmoqda, biroz kuting...",
         "ai_title": "🤖 **Sun'iy Intellekt Tahlili (Top 5 O'yin):**",
         "error": "❌ AI tahlilini olishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.",
-        "settings_menu": "⚙️ **Sozlamalar bo'limi:**\nTilni o'zgartiring yoki sevimli jamoangizni tanlang:",
-        "team_select": "⚽ Sevimli jamoangizni tanlang:",
+        "settings_menu": "⚙️ **Sozlamalar bo'limi:**\nBot tilini o'zgartirish uchun pastdagi tugmani bosing:",
         "lang_select": "🌐 Tilni tanlang:",
         "saved": "✅ Muvaffaqiyatli saqlandi!"
     },
@@ -45,8 +44,7 @@ TRANSLATIONS = {
         "ai_wait": "⏳ Искусственный интеллект анализирует топ-5 матчей на сегодня, подождите...",
         "ai_title": "🤖 **Анализ ИИ (Топ 5 матчей):**",
         "error": "❌ Произошла ошибка при получении анализа. Попробуйте позже.",
-        "settings_menu": "⚙️ **Меню настроек:**\nИзмените язык или выберите любимую команду:",
-        "team_select": "⚽ Выберите вашу любимую команду:",
+        "settings_menu": "⚙️ **Меню настроек:**\nНажмите кнопку ниже, чтобы изменить язык бота:",
         "lang_select": "🌐 Выберите язык:",
         "saved": "✅ Успешно сохранено!"
     },
@@ -60,8 +58,7 @@ TRANSLATIONS = {
         "ai_wait": "⏳ Artificial intelligence is analyzing the top 5 matches for today, please wait...",
         "ai_title": "🤖 **AI Analysis (Top 5 Matches):**",
         "error": "❌ An error occurred while getting the analysis. Please try again later.",
-        "settings_menu": "⚙️ **Settings Menu:**\nChange your language or select your favorite team:",
-        "team_select": "⚽ Select your favorite team:",
+        "settings_menu": "⚙️ **Settings Menu:**\nClick the button below to change the bot language:",
         "lang_select": "🌐 Select language:",
         "saved": "✅ Successfully saved!"
     }
@@ -70,7 +67,7 @@ TRANSLATIONS = {
 def get_user_lang(user_id):
     if user_id in user_settings and "lang" in user_settings[user_id]:
         return user_settings[user_id]["lang"]
-    return "uz"  # Standart til
+    return "uz"
 
 # --- KLAVIATURALAR ---
 def get_main_keyboard(lang="uz"):
@@ -86,19 +83,7 @@ def get_main_keyboard(lang="uz"):
 def get_settings_inline(lang="uz"):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⚽ Sevimli jamoani tanlash", callback_data="set_team")],
             [InlineKeyboardButton(text="🌐 Tilni o'zgartirish (Change language)", callback_data="set_lang")]
-        ]
-    )
-
-def get_teams_inline():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Real Madrid", callback_data="team_Real Madrid"),
-             InlineKeyboardButton(text="Barcelona", callback_data="team_Barcelona")],
-            [InlineKeyboardButton(text="Manchester United", callback_data="team_Manchester United"),
-             InlineKeyboardButton(text="Arsenal", callback_data="team_Arsenal")],
-            [InlineKeyboardButton(text="⬅️ Ortga", callback_data="back_settings")]
         ]
     )
 
@@ -107,8 +92,7 @@ def get_langs_inline():
         inline_keyboard=[
             [InlineKeyboardButton(text="🇺🇿 O'zbekcha", callback_data="lang_uz"),
              InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru")],
-            [InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en")],
-            [InlineKeyboardButton(text="⬅️ Ortga", callback_data="back_settings")]
+            [InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en")]
         ]
     )
 
@@ -119,7 +103,7 @@ async def cmd_start(message: types.Message):
     users_db.add(user_id)
     
     if user_id not in user_settings:
-        user_settings[user_id] = {"lang": "uz", "team": "Tanlanmagan"}
+        user_settings[user_id] = {"lang": "uz"}
         
     lang = get_user_lang(user_id)
     t = TRANSLATIONS[lang]
@@ -133,11 +117,11 @@ async def cmd_start(message: types.Message):
 async def cmd_help(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     if lang == "ru":
-        text = "🤖 **Справка:**\nИспользуйте кнопки меню для прогнозов, а в /settings меняйте язык и команду."
+        text = "🤖 **Справка:**\nИспользуйте кнопки меню для прогнозов, а в /settings меняйте язык бота."
     elif lang == "en":
-        text = "🤖 **Help:**\nUse the menu buttons for forecasts, and /settings to change language and team."
+        text = "🤖 **Help:**\nUse the menu buttons for forecasts, and /settings to change the language."
     else:
-        text = "🤖 **Yordam:**\nPrognozlar uchun menyu tugmalaridan foydalaning, /settings orqali til va jamoani o'zgartiring."
+        text = "🤖 **Yordam:**\nPrognozlar uchun menyu tugmalaridan foydalaning, /settings orqali tilni o'zgartiring."
     await message.answer(text, parse_mode="Markdown")
 
 # --- STAT ---
@@ -151,37 +135,15 @@ async def cmd_stat(message: types.Message):
 async def cmd_settings(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     t = TRANSLATIONS[lang]
-    team = user_settings.get(message.from_user.id, {}).get("team", "Tanlanmagan")
     
-    text = f"{t['settings_menu']}\n\n⚽ Joriy jamoa: <b>{team}</b>"
-    await message.answer(text, reply_markup=get_settings_inline(lang), parse_mode="HTML")
+    await message.answer(t["settings_menu"], reply_markup=get_settings_inline(lang), parse_mode="HTML")
 
 # --- INLINE CALLBACKS ---
-@dp.callback_query(F.data == "set_team")
-async def cb_set_team(callback: types.CallbackQuery):
-    lang = get_user_lang(callback.from_user.id)
-    t = TRANSLATIONS[lang]
-    await callback.message.edit_text(t["team_select"], reply_markup=get_teams_inline())
-
 @dp.callback_query(F.data == "set_lang")
 async def cb_set_lang(callback: types.CallbackQuery):
     lang = get_user_lang(callback.from_user.id)
     t = TRANSLATIONS[lang]
     await callback.message.edit_text(t["lang_select"], reply_markup=get_langs_inline())
-
-@dp.callback_query(F.data.startswith("team_"))
-async def cb_save_team(callback: types.CallbackQuery):
-    user_id = callback.from_user.id
-    team_name = callback.data.split("_")[1]
-    
-    if user_id not in user_settings:
-        user_settings[user_id] = {"lang": "uz"}
-    user_settings[user_id]["team"] = team_name
-    
-    lang = get_user_lang(user_id)
-    t = TRANSLATIONS[lang]
-    await callback.answer(t["saved"])
-    await callback.message.edit_text(f"✅ Sevimli jamoa saqlandi: <b>{team_name}</b>", parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("lang_"))
 async def cb_save_lang(callback: types.CallbackQuery):
@@ -189,7 +151,7 @@ async def cb_save_lang(callback: types.CallbackQuery):
     new_lang = callback.data.split("_")[1]
     
     if user_id not in user_settings:
-        user_settings[user_id] = {"team": "Tanlanmagan"}
+        user_settings[user_id] = {}
     user_settings[user_id]["lang"] = new_lang
     
     t = TRANSLATIONS[new_lang]
@@ -197,14 +159,6 @@ async def cb_save_lang(callback: types.CallbackQuery):
     
     # Yangi tildagi asosiy menyuni yuborish
     await callback.message.answer(t["welcome"].format(name=callback.from_user.first_name), reply_markup=get_main_keyboard(new_lang))
-
-@dp.callback_query(F.data == "back_settings")
-async def cb_back(callback: types.CallbackQuery):
-    lang = get_user_lang(callback.from_user.id)
-    t = TRANSLATIONS[lang]
-    team = user_settings.get(callback.from_user.id, {}).get("team", "Tanlanmagan")
-    text = f"{t['settings_menu']}\n\n⚽ Joriy jamoa: <b>{team}</b>"
-    await callback.message.edit_text(text, reply_markup=get_settings_inline(lang), parse_mode="HTML")
 
 # --- KUNLIK PROGNOZ ---
 @dp.message(F.text.in_(["📊 Kunlik prognoz", "📊 Ежедневный прогноз", "📊 Daily Forecast"]))
@@ -221,7 +175,6 @@ async def ai_forecast(message: types.Message):
     
     await message.answer(t["ai_wait"])
     
-    # Tanlangan tilga qarab AI'ga prompt berish
     prompt_langs = {
         "uz": "Bugungi kundagi eng muhim 5 ta futbol o'yini uchun professional tahlil va bashorat yoz. O'zbek tilida.",
         "ru": "Напиши профессиональный анализ и прогноз на топ-5 футбольных матчей на сегодня. На русском языке.",
