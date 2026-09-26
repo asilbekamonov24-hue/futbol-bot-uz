@@ -16,7 +16,7 @@ dp = Dispatcher()
 
 # Bazalar
 users_db = set()
-user_settings = {}  # {user_id: {"lang": "uz/ru/en", "score": 0}}
+user_settings = {}  # {user_id: {"lang": "uz/ru/en"}}
 
 # --- KOP TILLI TARJIMALAR (SNG UCHUN) ---
 TRANSLATIONS = {
@@ -24,15 +24,11 @@ TRANSLATIONS = {
         "welcome": "Salom, {name}! Futbol tahlil botiga xush kelibsiz. Quyidagi menyudan foydalaning:",
         "daily_btn": "📊 Kunlik prognoz",
         "ai_btn": "🤖 AI Tahlil & Foizlar",
-        "standings_btn": "🏆 Turnir jadvali",
-        "quiz_btn": "⚽ Viktorina",
         "help_btn": "ℹ️ Yordam",
         "settings_btn": "⚙️ Sozlamalar",
         "daily_text": "📊 **Bugungi kunlik prognoz:**\n\nReal Madrid vs Barcelona - O'yin shiddatli o'tishi va jamoalar gol almashishi kutilmoqda.",
-        "ai_wait": "⏳ Sun'iy intellekt o'yinlarni tahlil qilib, g'alaba qozonish ehtimolligi foizlarini hisoblamoqda...",
-        "ai_title": "🤖 **AI Match Simulyatsiyasi va G'alaba Foizlari:**",
-        "standings_text": "🏆 **Top Ligalar Turnir Jadvali (Joriy mavsum):**\n\n1. Real Madrid — 78 ochko\n2. Barcelona — 75 ochko\n3. Atletico — 68 ochko\n4. Girona — 62 ochko",
-        "quiz_start": "⚽ **Futbol Viktorinasi!**\nSavol: Jahon chempionatini eng ko'p marta yutgan terma jamoa qaysi?",
+        "ai_wait": "⏳ Sun'iy intellekt real vaqtdagi o'yinlarni tahlil qilib, g'alaba qozonish ehtimolligi foizlarini hisoblamoqda...",
+        "ai_title": "🤖 **AI Real Vaqt Tahlili va G'alaba Foizlari:**",
         "error": "❌ Ma'lumot olishda xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.",
         "settings_menu": "⚙️ **Sozlamalar bo'limi:**\nBot tilini o'zgartirish uchun pastdagi tugmani bosing:",
         "lang_select": "🌐 Tilni tanlang:",
@@ -42,15 +38,11 @@ TRANSLATIONS = {
         "welcome": "Привет, {name}! Добро пожаловать в бот футбольной аналитики. Используйте меню ниже:",
         "daily_btn": "📊 Ежедневный прогноз",
         "ai_btn": "🤖 ИИ Анализ & Проценты",
-        "standings_btn": "🏆 Турнирная таблица",
-        "quiz_btn": "⚽ Викторина",
         "help_btn": "ℹ️ Помощь",
         "settings_btn": "⚙️ Настройки",
         "daily_text": "📊 **Прогноз на сегодня:**\n\nРеал Мадрид против Барселоны - Ожидается яркая игра и голы от обеих команд.",
-        "ai_wait": "⏳ Искусственный интеллект анализирует матчи и рассчитывает проценты на победу...",
-        "ai_title": "🤖 **ИИ Симуляция матчей и Шансы на победу:**",
-        "standings_text": "🏆 **Турнирная таблица Топ-лиг:**\n\n1. Реал Мадрид — 78 очков\n2. Барселона — 75 очков\n3. Атлетико — 68 очков\n4. Жирона — 62 очка",
-        "quiz_start": "⚽ **Футбольная викторина!**\nВопрос: какая сборная выигрывала Чемпионат мира больше всего раз?",
+        "ai_wait": "⏳ Искусственный интеллект анализирует матчи в реальном времени и рассчитывает проценты...",
+        "ai_title": "🤖 **ИИ Анализ в реальном времени и Шансы на победу:**",
         "error": "❌ Произошла ошибка. Пожалуйста, попробуйте позже.",
         "settings_menu": "⚙️ **Меню настроек:**\nНажмите кнопку ниже, чтобы изменить язык бота:",
         "lang_select": "🌐 Выберите язык:",
@@ -60,15 +52,11 @@ TRANSLATIONS = {
         "welcome": "Hello, {name}! Welcome to the Football Analytics Bot. Use the menu below:",
         "daily_btn": "📊 Daily Forecast",
         "ai_btn": "🤖 AI Analysis & Odds",
-        "standings_btn": "🏆 Standings",
-        "quiz_btn": "⚽ Quiz",
         "help_btn": "ℹ️ Help",
         "settings_btn": "⚙️ Settings",
         "daily_text": "📊 **Today's Forecast:**\n\nReal Madrid vs Barcelona - An intense match with goals from both sides is expected.",
-        "ai_wait": "⏳ Artificial intelligence is analyzing matches and calculating win probabilities...",
-        "ai_title": "🤖 **AI Match Simulation & Win Probabilities:**",
-        "standings_text": "🏆 **Top Leagues Standings:**\n\n1. Real Madrid — 78 pts\n2. Barcelona — 75 pts\n3. Atletico — 68 pts\n4. Girona — 62 pts",
-        "quiz_start": "⚽ **Football Quiz!**\nQuestion: Which national team has won the World Cup the most times?",
+        "ai_wait": "⏳ Artificial intelligence is analyzing live matches and calculating win probabilities...",
+        "ai_title": "🤖 **AI Real-Time Analysis & Win Probabilities:**",
         "error": "❌ An error occurred. Please try again later.",
         "settings_menu": "⚙️ **Settings Menu:**\nClick the button below to change the bot language:",
         "lang_select": "🌐 Select language:",
@@ -87,7 +75,6 @@ def get_main_keyboard(lang="uz"):
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=t["daily_btn"]), KeyboardButton(text=t["ai_btn"])],
-            [KeyboardButton(text=t["standings_btn"]), KeyboardButton(text=t["quiz_btn"])],
             [KeyboardButton(text=t["help_btn"]), KeyboardButton(text=t["settings_btn"])]
         ],
         resize_keyboard=True
@@ -109,14 +96,6 @@ def get_langs_inline():
         ]
     )
 
-def get_quiz_inline():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Braziliya / Бразилия / Brazil", callback_data="quiz_correct")],
-            [InlineKeyboardButton(text="Br Germaniya / Германия / Germany", callback_data="quiz_wrong")]
-        ]
-    )
-
 # --- START ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -135,9 +114,9 @@ async def cmd_start(message: types.Message):
 async def cmd_help(message: types.Message):
     lang = get_user_lang(message.from_user.id)
     texts = {
-        "uz": "🤖 **Bot imkoniyatlari:**\n• Kunlik bashoratlar\n• AI orqali g'alaba foizlari va simulyatsiya\n• Turnir jadvallari\n• Futbol viktorinasi\n• /stat - Foydalanuvchilar soni",
-        "ru": "🤖 **Возможности бота:**\n• Ежедневные прогнозы\n• ИИ симуляция и проценты на победу\n• Турнирные таблицы\n• Футбольная викторина\n• /stat - Количество пользователей",
-        "en": "🤖 **Bot features:**\n• Daily forecasts\n• AI match simulation & odds\n• Standings\n• Football quiz\n• /stat - User count"
+        "uz": "🤖 **Bot imkoniyatlari:**\n• Kunlik bashoratlar\n• AI orqali real vaqtdagi g'alaba foizlari va tahlil\n• /stat - Foydalanuvchilar soni",
+        "ru": "🤖 **Возможности бота:**\n• Ежедневные прогнозы\n• ИИ анализ матчей в реальном времени и проценты на победу\n• /stat - Количество пользователей",
+        "en": "🤖 **Bot features:**\n• Daily forecasts\n• AI real-time match analysis & odds\n• /stat - User count"
     }
     await message.answer(texts.get(lang, texts["uz"]), parse_mode="Markdown")
 
@@ -154,7 +133,7 @@ async def cmd_settings(message: types.Message):
     t = TRANSLATIONS[lang]
     await message.answer(t["settings_menu"], reply_markup=get_settings_inline(lang), parse_mode="HTML")
 
-# --- INLINE CALLBACKS (LANG & QUIZ) ---
+# --- INLINE CALLBACKS (LANG) ---
 @dp.callback_query(F.data == "set_lang")
 async def cb_set_lang(callback: types.CallbackQuery):
     lang = get_user_lang(callback.from_user.id)
@@ -172,16 +151,6 @@ async def cb_save_lang(callback: types.CallbackQuery):
     await callback.answer(t["saved"])
     await callback.message.answer(t["welcome"].format(name=callback.from_user.first_name), reply_markup=get_main_keyboard(new_lang))
 
-@dp.callback_query(F.data == "quiz_correct")
-async def cb_quiz_correct(callback: types.CallbackQuery):
-    await callback.answer("To'g'ri! / Правильно! / Correct!", show_alert=True)
-    await callback.message.answer("🎉 Tabriklayman, javobingiz to'g'ri! Braziliya 5 marta JCh g'olibi bo'lgan.")
-
-@dp.callback_query(F.data == "quiz_wrong")
-async def cb_quiz_wrong(callback: types.CallbackQuery):
-    await callback.answer("Noto'g'ri / Неправильно / Wrong", show_alert=True)
-    await callback.message.answer("❌ Afsuski noto'g'ri. To'g'ri javob: Braziliya.")
-
 # --- KUNLIK PROGNOZ ---
 @dp.message(F.text.in_(["📊 Kunlik prognoz", "📊 Ежедневный прогноз", "📊 Daily Forecast"]))
 async def daily_forecast(message: types.Message):
@@ -189,21 +158,7 @@ async def daily_forecast(message: types.Message):
     t = TRANSLATIONS[lang]
     await message.answer(t["daily_text"], parse_mode="Markdown")
 
-# --- TURNIR JADVALI ---
-@dp.message(F.text.in_(["🏆 Turnir jadvali", "🏆 Турнирная таблица", "🏆 Standings"]))
-async def standings_handler(message: types.Message):
-    lang = get_user_lang(message.from_user.id)
-    t = TRANSLATIONS[lang]
-    await message.answer(t["standings_text"], parse_mode="Markdown")
-
-# --- VIKTORINA ---
-@dp.message(F.text.in_(["⚽ Viktorina", "⚽ Викторина", "⚽ Quiz"]))
-async def quiz_handler(message: types.Message):
-    lang = get_user_lang(message.from_user.id)
-    t = TRANSLATIONS[lang]
-    await message.answer(t["quiz_start"], reply_markup=get_quiz_inline(), parse_mode="Markdown")
-
-# --- AI ANALIZ & FOIZLAR (GEMINI) ---
+# --- AI ANALIZ & FOIZLAR (REAL VAQT REJIMIDA GEMINI ORQALI) ---
 @dp.message(F.text.in_(["🤖 AI Tahlil & Foizlar", "🤖 ИИ Анализ & Проценты", "🤖 AI Analysis & Odds"]))
 async def ai_forecast(message: types.Message):
     lang = get_user_lang(message.from_user.id)
@@ -211,10 +166,11 @@ async def ai_forecast(message: types.Message):
     
     await message.answer(t["ai_wait"])
     
+    # Sun'iy intellektga real vaqt talabiga mos professional prompt beramiz
     prompts = {
-        "uz": "Bugungi kundagi eng muhim top-5 futbol o'yini uchun professional tahlil va har bir o'yin uchun g'alaba qozonish ehtimolligi foizlarini (masalan: Real 60% - 20% Barca, Durang 20%) aniq yoz. O'zbek tilida.",
-        "ru": "Напиши профессиональный анализ на топ-5 футбольных матчей на сегодня и укажи проценты вероятности победы команд (например: Реал 60% - 20% Барса, Ничья 20%). На русском языке.",
-        "en": "Write a professional analysis for the top 5 football matches today and include win probabilities in percentages. In English."
+        "uz": "Hozirgi kundagi eng muhim futbol o'yinlari uchun professional tahlil tayyorla. Har bir o'yin uchun jamoalar imkoniyatlarini va g'alaba qozonish ehtimolligi foizlarini (masalan: Real 55% - 25% Barca, Durang 20%) aniq ko'rsatib ber. O'zbek tilida.",
+        "ru": "Подготовь профессиональный анализ на самые важные футбольные матчи на текущий момент. Для каждого матча укажи шансы команд и проценты вероятности победы (например: Реал 55% - 25% Барса, Ничья 20%). На русском языке.",
+        "en": "Prepare a professional analysis for the most important football matches currently. For each match, clearly indicate team odds and win probability percentages (e.g., Real 55% - 25% Barca, Draw 20%). In English."
     }
     prompt = prompts.get(lang, prompts["uz"])
     
