@@ -197,8 +197,8 @@ async def ai_forecast(message: types.Message):
     }
     prompt = prompts.get(lang, prompts["uz"])
     
-    # Ishonchli va to'g'ri gemini-2.0-flash modeli va v1 API manzili
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    # Eng barqaror va sinovdan o'tgan gemini-1.5-flash modeli ishlatilmoqda
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
