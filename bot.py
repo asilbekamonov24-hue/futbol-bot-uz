@@ -158,7 +158,7 @@ async def daily_forecast(message: types.Message):
     t = TRANSLATIONS[lang]
     await message.answer(t["daily_text"])
 
-# --- AI ANALIZ, FOIZLAR VA KOEFFITSIENTLAR ---
+# --- AI ANALIZ, FOIZLAR VA KOEFFITSIENTLAR (TO'G'RILANGAN v1beta URL) ---
 @dp.message(F.text.in_(["🤖 AI Tahlil & Koeffitsientlar", "🤖 ИИ Анализ & Коэффициенты", "🤖 AI Analysis & Odds"]))
 async def ai_forecast(message: types.Message):
     lang = get_user_lang(message.from_user.id)
@@ -197,8 +197,8 @@ async def ai_forecast(message: types.Message):
     }
     prompt = prompts.get(lang, prompts["uz"])
     
-    # Eng barqaror va sinovdan o'tgan gemini-1.5-flash modeli ishlatilmoqda
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    # v1beta versiyasi va gemini-1.5-flash modeli (Google rasmiy talabi bo'yicha)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
