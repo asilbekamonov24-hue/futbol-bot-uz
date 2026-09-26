@@ -158,7 +158,7 @@ async def daily_forecast(message: types.Message):
     t = TRANSLATIONS[lang]
     await message.answer(t["daily_text"])
 
-# --- AI ANALIZ, FOIZLAR VA KOEFFITSIENTLAR (XATOSIZ VERSIYA) ---
+# --- AI ANALIZ, FOIZLAR VA KOEFFITSIENTLAR (KUCHAYtirilgan XAVFSIZ VERSIYA) ---
 @dp.message(F.text.in_(["🤖 AI Tahlil & Koeffitsientlar", "🤖 ИИ Анализ & Коэффициенты", "🤖 AI Analysis & Odds"]))
 async def ai_forecast(message: types.Message):
     lang = get_user_lang(message.from_user.id)
@@ -201,22 +201,30 @@ async def ai_forecast(message: types.Message):
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
+    if not GEMINI_API_KEY:
+        await message.answer("❌ Xatolik: GEMINI_API_KEY Render'da kiritilmagan!")
+        return
+
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
-                    ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    try:
+                        ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    except (KeyError, IndexError) as ke:
+                        ai_text = f"AI javobida ma'lumot topilmadi. Tafsilot: {str(ke)}"
+                    
                     if len(ai_text) > 4000:
                         ai_text = ai_text[:4000]
                     await message.answer(f"{t['ai_title']}\n\n{ai_text}")
                 else:
                     err_body = await response.text()
                     print(f"API Error: {err_body}")
-                    await message.answer(t["error"])
+                    await message.answer(f"❌ API xatosi ({response.status}): {err_body[:150]}")
     except Exception as e:
         print(f"Exception error: {e}")
-        await message.answer(t["error"])
+        await message.answer(f"❌ Tizim xatosi: {str(e)}")
 
 # --- RENDER WEB SERVER ---
 async def handle(request):
